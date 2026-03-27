@@ -1,31 +1,82 @@
 import { combineRgb } from '@companion-module/base'
 import type { ModuleInstance } from './main.js'
+import { getSourceChoices } from './sources.js'
 
 export function UpdateFeedbacks(self: ModuleInstance): void {
+	const sourceChoices = getSourceChoices(self.config.consoleModel)
+	const defaultSource = sourceChoices.length > 1 ? sourceChoices[0].id : 'custom'
+
 	self.setFeedbackDefinitions({
-		ChannelState: {
-			name: 'Example Feedback',
+		lamp_state: {
+			name: 'Lamp State',
 			type: 'boolean',
 			defaultStyle: {
 				bgcolor: combineRgb(255, 0, 0),
-				color: combineRgb(0, 0, 0),
+				color: combineRgb(255, 255, 255),
 			},
 			options: [
 				{
-					id: 'num',
+					id: 'source',
+					type: 'dropdown',
+					label: 'Source',
+					default: defaultSource,
+					choices: sourceChoices,
+				},
+				{
+					id: 'customChannel',
 					type: 'number',
-					label: 'Test',
-					default: 5,
+					label: 'Livewire Channel Number',
+					default: 1,
 					min: 0,
-					max: 10,
+					max: 32767,
+					isVisible: (options: Record<string, unknown>): boolean => options['source'] === 'custom',
+				},
+				{
+					id: 'lamp',
+					type: 'dropdown',
+					label: 'Lamp',
+					default: 'LMP_ON',
+					choices: [
+						{ id: 'LMP_ON', label: 'ON' },
+						{ id: 'LMP_OFF', label: 'OFF' },
+						{ id: 'LMP_MUTE', label: 'MUTE' },
+						{ id: 'LMP_TALK', label: 'TALK' },
+					],
+				},
+				{
+					id: 'state',
+					type: 'dropdown',
+					label: 'State',
+					default: 'ON',
+					choices: [
+						{ id: 'ON', label: 'ON' },
+						{ id: 'OFF', label: 'OFF' },
+					],
 				},
 			],
 			callback: (feedback) => {
-				console.log('Hello world!', feedback.options.num)
-				if (Number(feedback.options.num) > 5) {
-					return true
-				} else {
-					return false
+				const channelId =
+					feedback.options['source'] === 'custom'
+						? Number(feedback.options['customChannel'])
+						: Number(feedback.options['source'])
+
+				const state = self.channelStates.get(channelId)
+				if (!state) return false
+
+				const lamp = String(feedback.options['lamp'])
+				const expected = feedback.options['state'] === 'ON'
+
+				switch (lamp) {
+					case 'LMP_ON':
+						return state.LMP_ON === expected
+					case 'LMP_OFF':
+						return state.LMP_OFF === expected
+					case 'LMP_MUTE':
+						return state.LMP_MUTE === expected
+					case 'LMP_TALK':
+						return state.LMP_TALK === expected
+					default:
+						return false
 				}
 			},
 		},

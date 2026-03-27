@@ -1,6 +1,6 @@
 {
-	"name": "your-module-name",
-	"version": "0.1.0",
+	"name": "axia-accessory",
+	"version": "1.0.0",
 	"main": "dist/main.js",
 	"type": "module",
 	"scripts": {
@@ -16,7 +16,7 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/bitfocus/companion-module-your-module-name.git"
+		"url": "git+https://github.com/balbinus/companion-module-axia-accessory.git"
 	},
 	"engines": {
 		"node": "^22.20",
