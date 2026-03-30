@@ -5,7 +5,10 @@ import { getFixedSources } from './sources.js'
 
 export function UpdatePresets(self: ModuleInstance): void {
 	const presets: CompanionPresetDefinitions = {}
-	const fixedSources = getFixedSources(self.config.consoleModel)
+	const fixedSources = [
+		...getFixedSources(self.config.consoleModel),
+		{ id: 1, label: 'Livewire Channel 1' },
+	];
 
 	const buttons = [
 		{ id: 'BTN_ON', lamp: 'LMP_ON', label: 'ON', color: combineRgb(0, 255, 0) },
@@ -32,8 +35,8 @@ export function UpdatePresets(self: ModuleInstance): void {
 							{
 								actionId: 'button_down',
 								options: {
-									source: String(source.id),
-									customChannel: 1,
+									source: source.id > 32768 ? String(source.id) : 'custom',
+									customChannel: source.id > 32768 ? 1 : source.id,
 									button: btn.id,
 								},
 							},
@@ -42,8 +45,8 @@ export function UpdatePresets(self: ModuleInstance): void {
 							{
 								actionId: 'button_up',
 								options: {
-									source: String(source.id),
-									customChannel: 1,
+									source: source.id > 32768 ? String(source.id) : 'custom',
+									customChannel: source.id > 32768 ? 1 : source.id,
 									button: btn.id,
 								},
 							},
@@ -54,8 +57,8 @@ export function UpdatePresets(self: ModuleInstance): void {
 					{
 						feedbackId: 'lamp_state',
 						options: {
-							source: String(source.id),
-							customChannel: 1,
+							source: source.id > 32768 ? String(source.id) : 'custom',
+							customChannel: source.id > 32768 ? 1 : source.id,
 							lamp: btn.lamp,
 							state: 'ON',
 						},
