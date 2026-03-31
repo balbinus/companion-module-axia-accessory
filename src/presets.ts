@@ -5,10 +5,7 @@ import { getFixedSources } from './sources.js'
 
 export function UpdatePresets(self: ModuleInstance): void {
 	const presets: CompanionPresetDefinitions = {}
-	const fixedSources = [
-		...getFixedSources(self.config.consoleModel),
-		{ id: 1, label: 'Livewire Channel 1' },
-	];
+	const fixedSources = [...getFixedSources(self.config.consoleModel), { id: 1, label: 'Livewire Channel 1' }]
 
 	const buttons = [
 		{ id: 'BTN_ON', lamp: 'LMP_ON', label: 'ON', color: combineRgb(0, 255, 0) },

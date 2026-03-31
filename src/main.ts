@@ -138,9 +138,13 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		const isNew = !state
 		if (!state) {
 			state = {
-				LMP_ON: false, LMP_OFF: false,
-				LMP_MUTE: false, LMP_TALK: false,
-				DSP_HPtext: '', LMP_HPpset1: false, LMP_HPpset2: false
+				LMP_ON: false,
+				LMP_OFF: false,
+				LMP_MUTE: false,
+				LMP_TALK: false,
+				DSP_HPtext: '',
+				LMP_HPpset1: false,
+				LMP_HPpset2: false,
 			}
 		}
 
@@ -151,8 +155,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 			const key = propMatch[1]
 			let value = propMatch[2]
 
-			if ((value.startsWith("'") && value.endsWith("'"))
-				|| (value.startsWith('"') && value.endsWith('"'))) {
+			if ((value.startsWith("'") && value.endsWith("'")) || (value.startsWith('"') && value.endsWith('"'))) {
 				value = value.slice(1, -1)
 			}
 
@@ -170,7 +173,6 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 					state.LMP_TALK = value === 'ON'
 					break
 				case 'DSP_HPtext':
-					this.log('debug', `DSP_HPtext value: ${value.split('').map(c => c.charCodeAt(0)).join(', ')}`)
 					// Map from character codes to block characters:
 					// 27	U+2589 	▉ 	Left seven eighths block
 					// 28	U+258A 	▊ 	Left three quarters block
@@ -180,16 +182,23 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 					// 32	U+0020 	' ' 	ASCII Space
 					state.DSP_HPtext = value
 						.split('')
-						.map(c => {
+						.map((c) => {
 							const code = c.charCodeAt(0)
 							switch (code) {
-								case 27: return '▉'
-								case 28: return '▊'
-								case 29: return '▋'
-								case 30: return '▍'
-								case 31: return '▎'
-								case 32: return ' '
-								default: return c
+								case 27:
+									return '▉'
+								case 28:
+									return '▊'
+								case 29:
+									return '▋'
+								case 30:
+									return '▍'
+								case 31:
+									return '▎'
+								case 32:
+									return ' '
+								default:
+									return c
 							}
 						})
 						.join('')
