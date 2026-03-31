@@ -41,6 +41,8 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 						{ id: 'LMP_OFF', label: 'OFF' },
 						{ id: 'LMP_MUTE', label: 'MUTE' },
 						{ id: 'LMP_TALK', label: 'TALK' },
+						{ id: 'LMP_HPpset1', label: 'Headphone Preset 1' },
+						{ id: 'LMP_HPpset2', label: 'Headphone Preset 2' },
 					],
 				},
 				{
@@ -75,6 +77,10 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 						return state.LMP_MUTE === expected
 					case 'LMP_TALK':
 						return state.LMP_TALK === expected
+					case 'LMP_HPpset1':
+						return state.LMP_HPpset1 === expected
+					case 'LMP_HPpset2':
+						return state.LMP_HPpset2 === expected
 					default:
 						return false
 				}

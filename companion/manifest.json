@@ -4,7 +4,7 @@
 	"name": "axia-accessory",
 	"shortname": "Axia Accessory Module",
 	"description": "Axia Accessory Module for Axia Livewire consoles (QOR, PowerStation, Quasar, Studio Engine)",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"license": "MIT",
 	"repository": "git+https://github.com/balbinus/companion-module-axia-accessory.git",
 	"bugs": "https://github.com/balbinus/companion-module-axia-accessory/issues",

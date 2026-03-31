@@ -29,6 +29,9 @@ export function UpdateActions(self: ModuleInstance): void {
 		{ id: 'BTN_OFF', label: 'OFF' },
 		{ id: 'BTN_MUTE', label: 'MUTE' },
 		{ id: 'BTN_TALK', label: 'TALK' },
+		{ id: 'BTN_HPpset1', label: 'Headphone Preset 1' },
+		{ id: 'BTN_HPpset2', label: 'Headphone Preset 2' },
+		{ id: 'BTN_HPsel', label: 'Headphone Select' },
 	]
 
 	function getChannelId(options: Record<string, unknown>): number {
@@ -45,7 +48,7 @@ export function UpdateActions(self: ModuleInstance): void {
 				...channelOptions,
 				{
 					id: 'button',
-					type: 'dropdown',
+					type: 'dropdown' as const,
 					label: 'Button',
 					default: 'BTN_TALK',
 					choices: buttonChoices,
@@ -105,6 +108,28 @@ export function UpdateActions(self: ModuleInstance): void {
 				setTimeout(() => {
 					self.sendCommand(channelId, button, 'UP')
 				}, delay)
+			},
+		},
+
+		hp_sel_rot: {
+			name: 'Headphone Select Rotate',
+			options: [
+				...channelOptions,
+				{
+					id: 'direction',
+					type: 'dropdown',
+					label: 'Direction',
+					default: '+1',
+					choices: [
+						{ id: '+1', label: '>' },
+						{ id: '-1', label: '<' },
+					],
+				},
+			],
+			callback: async (event) => {
+				const channelId = getChannelId(event.options)
+				const direction = String(event.options['direction'])
+				self.sendCommand(channelId, 'ROT_HPsel', direction)
 			},
 		},
 	})

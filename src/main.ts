@@ -17,6 +17,8 @@ export interface ChannelState {
 	LMP_MUTE: boolean
 	LMP_TALK: boolean
 	DSP_HPtext: string
+	LMP_HPpset1: boolean
+	LMP_HPpset2: boolean
 }
 
 export class ModuleInstance extends InstanceBase<ModuleConfig> {
@@ -125,6 +127,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 
 	parseMessage(data: string): void {
 		const trimmed = data.trim()
+		this.log('debug', `Received message: ${trimmed}`)
 		const match = trimmed.match(/^SET\s+LwCH#(\d+)\s+(.+)$/)
 		if (!match) return
 
@@ -134,17 +137,22 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		let state = this.channelStates.get(channelId)
 		const isNew = !state
 		if (!state) {
-			state = { LMP_ON: false, LMP_OFF: false, LMP_MUTE: false, LMP_TALK: false, DSP_HPtext: '' }
+			state = {
+				LMP_ON: false, LMP_OFF: false,
+				LMP_MUTE: false, LMP_TALK: false,
+				DSP_HPtext: '', LMP_HPpset1: false, LMP_HPpset2: false
+			}
 		}
 
 		// Parse key=value pairs, handling quoted strings for DSP_HPtext
-		const propRegex = /(\w+)=('(?:[^']*)'|[^,]*)/g
+		const propRegex = /(\w+)=('(?:[^']*)'|"(?:[^"]*)"|[^,]*)/g
 		let propMatch
 		while ((propMatch = propRegex.exec(propsStr)) !== null) {
 			const key = propMatch[1]
 			let value = propMatch[2]
 
-			if (value.startsWith("'") && value.endsWith("'")) {
+			if ((value.startsWith("'") && value.endsWith("'"))
+				|| (value.startsWith('"') && value.endsWith('"'))) {
 				value = value.slice(1, -1)
 			}
 
@@ -162,7 +170,35 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 					state.LMP_TALK = value === 'ON'
 					break
 				case 'DSP_HPtext':
+					this.log('debug', `DSP_HPtext value: ${value.split('').map(c => c.charCodeAt(0)).join(', ')}`)
+					// Map from character codes to block characters:
+					// 27	U+2589 	▉ 	Left seven eighths block
+					// 28	U+258A 	▊ 	Left three quarters block
+					// 29	U+258B 	▋ 	Left five eighths block
+					// 30	U+258D 	▍ 	Left three eighths block
+					// 31	U+258E 	▎ 	Left one quarter block
+					// 32	U+0020 	' ' 	ASCII Space
 					state.DSP_HPtext = value
+						.split('')
+						.map(c => {
+							const code = c.charCodeAt(0)
+							switch (code) {
+								case 27: return '▉'
+								case 28: return '▊'
+								case 29: return '▋'
+								case 30: return '▍'
+								case 31: return '▎'
+								case 32: return ' '
+								default: return c
+							}
+						})
+						.join('')
+					break
+				case 'LMP_HPpset1':
+					state.LMP_HPpset1 = value === 'ON'
+					break
+				case 'LMP_HPpset2':
+					state.LMP_HPpset2 = value === 'ON'
 					break
 			}
 		}
