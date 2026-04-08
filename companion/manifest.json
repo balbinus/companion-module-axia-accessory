@@ -3,7 +3,7 @@
 	"id": "axia-accessory",
 	"name": "axia-accessory",
 	"shortname": "Axia Accessory Module",
-	"description": "Axia Accessory Module for Axia Livewire consoles (QOR, PowerStation, Quasar, Studio Engine)",
+	"description": "Axia Accessory Module for Axia Livewire consoles (PowerStation, Quasar, Studio Engine)",
 	"version": "1.0.2",
 	"license": "MIT",
 	"repository": "git+https://github.com/balbinus/companion-module-axia-accessory.git",
@@ -22,6 +22,6 @@
 	},
 	"legacyIds": [],
 	"manufacturer": "Axia Audio",
-	"products": ["QOR.16", "QOR.32", "Fusion", "Element", "iQ", "Studio Engine", "PowerStation", "Quasar"],
+	"products": ["Fusion", "Element", "Studio Engine", "PowerStation", "Quasar"],
 	"keywords": ["axia", "livewire", "accessory", "telos"]
 }
