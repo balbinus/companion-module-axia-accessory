@@ -16,7 +16,12 @@ export interface ChannelState {
 	LMP_OFF: boolean
 	LMP_MUTE: boolean
 	LMP_TALK: boolean
+	// Raw DSP_HPtext received from the console
 	DSP_HPtext: string
+	// Calculated DSP_HPvol (0-100), based on the DSP_HPtext
+	DSP_HPvol: number
+	// Source of the headphone signal, based on the DSP_HPtext
+	DSP_HPsource: string
 	LMP_HPpset1: boolean
 	LMP_HPpset2: boolean
 }
@@ -143,6 +148,8 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 				LMP_MUTE: false,
 				LMP_TALK: false,
 				DSP_HPtext: '',
+				DSP_HPvol: 0,
+				DSP_HPsource: '',
 				LMP_HPpset1: false,
 				LMP_HPpset2: false,
 			}
@@ -173,35 +180,57 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 					state.LMP_TALK = value === 'ON'
 					break
 				case 'DSP_HPtext':
-					// Map from character codes to block characters:
-					// 27	U+2589 	▉ 	Left seven eighths block
-					// 28	U+258A 	▊ 	Left three quarters block
-					// 29	U+258B 	▋ 	Left five eighths block
-					// 30	U+258D 	▍ 	Left three eighths block
-					// 31	U+258E 	▎ 	Left one quarter block
-					// 32	U+0020 	' ' 	ASCII Space
-					state.DSP_HPtext = value
-						.split('')
-						.map((c) => {
-							const code = c.charCodeAt(0)
-							switch (code) {
-								case 27:
-									return '▉'
-								case 28:
-									return '▊'
-								case 29:
-									return '▋'
-								case 30:
-									return '▍'
-								case 31:
-									return '▎'
-								case 32:
-									return ' '
-								default:
-									return c
-							}
-						})
-						.join('')
+					// Test if value contains exactly 10 characters
+					// from ASCII character codes 27-32 (for volume bar)
+					/* eslint-disable no-control-regex */
+					if (value.length == 10 && /^[\x1b-\x20]{10}$/.test(value)) {
+						this.log('debug', `Parsing DSP_HPtext as volume bar`)
+
+						// Map from character codes to block characters:
+						// 27	U+2589 	▉ 	Left seven eighths block
+						// 28	U+258A 	▊ 	Left three quarters block
+						// 29	U+258B 	▋ 	Left five eighths block
+						// 30	U+258D 	▍ 	Left three eighths block
+						// 31	U+258E 	▎ 	Left one quarter block
+						// 32	U+0020 	' ' 	ASCII Space
+						let newHPvol = 0
+						state.DSP_HPtext = value
+							.split('')
+							.map((c) => {
+								const code = c.charCodeAt(0)
+								switch (code) {
+									case 27:
+										newHPvol += 5
+										return '▉'
+									case 28:
+										newHPvol += 4
+										return '▊'
+									case 29:
+										newHPvol += 3
+										return '▋'
+									case 30:
+										newHPvol += 2
+										return '▍'
+									case 31:
+										newHPvol += 1
+										return '▎'
+									case 32:
+										newHPvol += 0
+										return ' '
+									default:
+										// any other character: reset newHPvol because it's not a volume bar
+										newHPvol = -1
+										return c
+								}
+							})
+							.join('')
+
+						this.log('debug', `Parsed DSP_HPtext: ${state.DSP_HPtext}, newHPvol: ${newHPvol}`)
+						state.DSP_HPvol = newHPvol * 2
+					} else {
+						state.DSP_HPtext = value
+						state.DSP_HPsource = value
+					}
 					break
 				case 'LMP_HPpset1':
 					state.LMP_HPpset1 = value === 'ON'

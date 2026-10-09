@@ -26,7 +26,11 @@ For each known source (internal or dynamically discovered), the following variab
 - `ch_<id>_lmp_off` — OFF lamp state
 - `ch_<id>_lmp_mute` — MUTE lamp state
 - `ch_<id>_lmp_talk` — TALK lamp state
+- `ch_<id>_lmp_hp_pset1` — HEADPHONE PRESET 1 lamp state
+- `ch_<id>_lmp_hp_pset2` — HEADPHONE PRESET 2 lamp state
 - `ch_<id>_dsp_hptext` — Display text
+- `ch_<id>_dsp_hpvol` — Volume (0-100)
+- `ch_<id>_dsp_hpsource` — Headphone feed source
 
 ### Presets
 

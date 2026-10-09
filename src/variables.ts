@@ -25,6 +25,8 @@ export function UpdateVariableDefinitions(self: ModuleInstance): void {
 			{ variableId: `${prefix}_lmp_mute`, name: `${label} - MUTE Lamp` },
 			{ variableId: `${prefix}_lmp_talk`, name: `${label} - TALK Lamp` },
 			{ variableId: `${prefix}_dsp_hptext`, name: `${label} - Display Text` },
+			{ variableId: `${prefix}_dsp_hpvol`, name: `${label} - HP Volume` },
+			{ variableId: `${prefix}_dsp_hpsource`, name: `${label} - HP Source` },
 			{ variableId: `${prefix}_lmp_hp_pset1`, name: `${label} - Headphone Preset 1 Lamp` },
 			{ variableId: `${prefix}_lmp_hp_pset2`, name: `${label} - Headphone Preset 2 Lamp` },
 		)
@@ -43,6 +45,8 @@ export function updateVariableValues(self: ModuleInstance): void {
 		values[`${prefix}_lmp_mute`] = state.LMP_MUTE ? 'ON' : 'OFF'
 		values[`${prefix}_lmp_talk`] = state.LMP_TALK ? 'ON' : 'OFF'
 		values[`${prefix}_dsp_hptext`] = state.DSP_HPtext
+		values[`${prefix}_dsp_hpvol`] = state.DSP_HPvol.toString()
+		values[`${prefix}_dsp_hpsource`] = state.DSP_HPsource
 		values[`${prefix}_lmp_hp_pset1`] = state.LMP_HPpset1 ? 'ON' : 'OFF'
 		values[`${prefix}_lmp_hp_pset2`] = state.LMP_HPpset2 ? 'ON' : 'OFF'
 	}
