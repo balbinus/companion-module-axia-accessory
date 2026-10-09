@@ -1,26 +1,31 @@
-import type { ModuleInstance } from './main.js'
-import { getSourceChoices } from './sources.js'
+import type { SomeCompanionActionInputField } from '@companion-module/base'
+import type ModuleInstance from './main.js'
+import type { ChannelOptions } from './types.js'
+import { getSourceChoices, resolveChannelId } from './sources.js'
 
 export function UpdateActions(self: ModuleInstance): void {
 	const sourceChoices = getSourceChoices(self.config.consoleModel)
 	const defaultSource = sourceChoices.length > 1 ? sourceChoices[0].id : 'custom'
 
-	const channelOptions = [
+	const channelOptions: SomeCompanionActionInputField<keyof ChannelOptions>[] = [
 		{
 			id: 'source',
-			type: 'dropdown' as const,
+			type: 'dropdown',
 			label: 'Source',
 			default: defaultSource,
 			choices: sourceChoices,
+			// needed so that isVisibleExpression can reference this field
+			disableAutoExpression: true,
 		},
 		{
 			id: 'customChannel',
-			type: 'number' as const,
+			type: 'number',
 			label: 'Livewire Channel Number',
 			default: 1,
 			min: 0,
 			max: 32767,
-			isVisible: (options: Record<string, unknown>): boolean => options['source'] === 'custom',
+			asInteger: true,
+			isVisibleExpression: '$(options:source) == "custom"',
 		},
 	]
 
@@ -34,13 +39,6 @@ export function UpdateActions(self: ModuleInstance): void {
 		{ id: 'BTN_HPsel', label: 'Headphone Select' },
 	]
 
-	function getChannelId(options: Record<string, unknown>): number {
-		if (options['source'] === 'custom') {
-			return Number(options['customChannel'])
-		}
-		return Number(options['source'])
-	}
-
 	self.setActionDefinitions({
 		button_down: {
 			name: 'Button Down',
@@ -48,15 +46,15 @@ export function UpdateActions(self: ModuleInstance): void {
 				...channelOptions,
 				{
 					id: 'button',
-					type: 'dropdown' as const,
+					type: 'dropdown',
 					label: 'Button',
 					default: 'BTN_TALK',
 					choices: buttonChoices,
 				},
 			],
 			callback: async (event) => {
-				const channelId = getChannelId(event.options)
-				const button = String(event.options['button'])
+				const channelId = resolveChannelId(event.options)
+				const button = event.options.button
 				self.sendCommand(channelId, button, 'DOWN')
 			},
 		},
@@ -74,8 +72,8 @@ export function UpdateActions(self: ModuleInstance): void {
 				},
 			],
 			callback: async (event) => {
-				const channelId = getChannelId(event.options)
-				const button = String(event.options['button'])
+				const channelId = resolveChannelId(event.options)
+				const button = event.options.button
 				self.sendCommand(channelId, button, 'UP')
 			},
 		},
@@ -98,12 +96,14 @@ export function UpdateActions(self: ModuleInstance): void {
 					default: 100,
 					min: 50,
 					max: 1000,
+					asInteger: true,
+					clampValues: true,
 				},
 			],
 			callback: async (event) => {
-				const channelId = getChannelId(event.options)
-				const button = String(event.options['button'])
-				const delay = Number(event.options['delay'])
+				const channelId = resolveChannelId(event.options)
+				const button = event.options.button
+				const delay = event.options.delay
 				self.sendCommand(channelId, button, 'DOWN')
 				setTimeout(() => {
 					self.sendCommand(channelId, button, 'UP')
@@ -127,8 +127,8 @@ export function UpdateActions(self: ModuleInstance): void {
 				},
 			],
 			callback: async (event) => {
-				const channelId = getChannelId(event.options)
-				const direction = String(event.options['direction'])
+				const channelId = resolveChannelId(event.options)
+				const direction = event.options.direction
 				self.sendCommand(channelId, 'ROT_HPsel', direction)
 			},
 		},

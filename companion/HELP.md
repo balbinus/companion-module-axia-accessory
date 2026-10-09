@@ -10,13 +10,14 @@ This module acts as an Axia Accessory Module, communicating with Axia Livewire c
 
 ### Actions
 
-- **Button Down**: Sends a button-down event for a given source and button (ON, OFF, MUTE, TALK).
+- **Button Down**: Sends a button-down event for a given source and button (ON, OFF, MUTE, TALK, Headphone Preset 1, Headphone Preset 2, Headphone Select).
 - **Button Up**: Sends a button-up event for a given source and button.
-- **Button Press (Down + Up)**: Sends a button-down event followed by a button-up event after a configurable delay.
+- **Button Press (Down + Up)**: Sends a button-down event followed by a button-up event after a configurable delay (50-1000 ms).
+- **Headphone Select Rotate**: Sends a rotary event (`>` or `<`) for the headphone select control of a given source.
 
 ### Feedbacks
 
-- **Lamp State**: A boolean feedback that is true when the selected lamp (ON, OFF, MUTE, TALK) on a given source matches the selected state (ON or OFF). Useful for lighting up buttons based on console lamp states.
+- **Lamp State**: A boolean feedback that is true when the selected lamp (ON, OFF, MUTE, TALK, Headphone Preset 1, Headphone Preset 2) on a given source matches the selected state (ON or OFF). Useful for lighting up buttons based on console lamp states.
 
 ### Variables
 
@@ -34,4 +35,6 @@ For each known source (internal or dynamically discovered), the following variab
 
 ### Presets
 
-When a console model with internal sources is selected, presets are automatically generated for each source and button type (ON, OFF, MUTE, TALK) with matching feedbacks.
+Presets are generated for each button type (ON, OFF, MUTE, TALK, headphone presets) with matching feedbacks, plus a headphone select button (push and rotary). When a console model with internal sources is selected, these are generated for each fixed source. The **Livewire Channel** presets, which target any Livewire channel number, are always generated.
+
+Each Livewire Channel button has a `channel` local variable (default 1): after adding a button, open its local variables and change `channel` to retarget the whole button (its actions, feedbacks and text) to another channel. The headphone display text of a retargeted button appears once that channel has sent its first message to the module, since a channel's variables are created on its first message.

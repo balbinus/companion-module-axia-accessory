@@ -1,6 +1,6 @@
 import { combineRgb } from '@companion-module/base'
-import type { ModuleInstance } from './main.js'
-import { getSourceChoices } from './sources.js'
+import type ModuleInstance from './main.js'
+import { getSourceChoices, resolveChannelId } from './sources.js'
 
 export function UpdateFeedbacks(self: ModuleInstance): void {
 	const sourceChoices = getSourceChoices(self.config.consoleModel)
@@ -21,6 +21,8 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 					label: 'Source',
 					default: defaultSource,
 					choices: sourceChoices,
+					// needed so that isVisibleExpression can reference this field
+					disableAutoExpression: true,
 				},
 				{
 					id: 'customChannel',
@@ -29,7 +31,8 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 					default: 1,
 					min: 0,
 					max: 32767,
-					isVisible: (options: Record<string, unknown>): boolean => options['source'] === 'custom',
+					asInteger: true,
+					isVisibleExpression: '$(options:source) == "custom"',
 				},
 				{
 					id: 'lamp',
@@ -57,18 +60,14 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 				},
 			],
 			callback: (feedback) => {
-				const channelId =
-					feedback.options['source'] === 'custom'
-						? Number(feedback.options['customChannel'])
-						: Number(feedback.options['source'])
+				const channelId = resolveChannelId(feedback.options)
 
 				const state = self.channelStates.get(channelId)
 				if (!state) return false
 
-				const lamp = String(feedback.options['lamp'])
-				const expected = feedback.options['state'] === 'ON'
+				const expected = feedback.options.state === 'ON'
 
-				switch (lamp) {
+				switch (feedback.options.lamp) {
 					case 'LMP_ON':
 						return state.LMP_ON === expected
 					case 'LMP_OFF':

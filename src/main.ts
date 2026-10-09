@@ -1,7 +1,7 @@
-import { InstanceBase, runEntrypoint, InstanceStatus, type SomeCompanionConfigField } from '@companion-module/base'
+import { InstanceBase, InstanceStatus, type SomeCompanionConfigField } from '@companion-module/base'
 import { GetConfigFields, type ModuleConfig } from './config.js'
-import { UpdateVariableDefinitions, updateVariableValues } from './variables.js'
-import { UpgradeScripts } from './upgrades.js'
+import { UpdateVariableDefinitions, updateVariableValues, createChannelState } from './variables.js'
+import type { ModuleTypes } from './types.js'
 import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
 import { UpdatePresets } from './presets.js'
@@ -26,7 +26,9 @@ export interface ChannelState {
 	LMP_HPpset2: boolean
 }
 
-export class ModuleInstance extends InstanceBase<ModuleConfig> {
+export { UpgradeScripts } from './upgrades.js'
+
+export default class ModuleInstance extends InstanceBase<ModuleTypes> {
 	config!: ModuleConfig
 	channelStates: Map<number, ChannelState> = new Map()
 	receiveSocket: dgram.Socket | null = null
@@ -142,17 +144,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		let state = this.channelStates.get(channelId)
 		const isNew = !state
 		if (!state) {
-			state = {
-				LMP_ON: false,
-				LMP_OFF: false,
-				LMP_MUTE: false,
-				LMP_TALK: false,
-				DSP_HPtext: '',
-				DSP_HPvol: 0,
-				DSP_HPsource: '',
-				LMP_HPpset1: false,
-				LMP_HPpset2: false,
-			}
+			state = createChannelState()
 		}
 
 		// Parse key=value pairs, handling quoted strings for DSP_HPtext
@@ -244,14 +236,20 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		this.channelStates.set(channelId, state)
 
 		if (isNew) {
+			// also sets the variable values
 			this.updateVariableDefinitions()
+		} else {
+			updateVariableValues(this)
 		}
-
-		updateVariableValues(this)
 		this.checkFeedbacks('lamp_state')
 	}
 
 	sendCommand(channelId: number, button: string, direction: string): void {
+		if (!Number.isInteger(channelId) || channelId < 0) {
+			this.log('error', `Invalid channel id: ${channelId}`)
+			return
+		}
+
 		const message = `EVENT LwCH#${channelId} ${button}=${direction}`
 		this.log('debug', `Sending: ${message}`)
 
@@ -284,5 +282,3 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		UpdateVariableDefinitions(this)
 	}
 }
-
-runEntrypoint(ModuleInstance, UpgradeScripts)

@@ -1,3 +1,5 @@
+import type { ChannelOptions } from './types.js'
+
 export interface FixedSource {
 	id: number
 	label: string
@@ -72,6 +74,14 @@ export function getSourceChoices(consoleModel: string): { id: string; label: str
 	return choices
 }
 
+/** The Livewire channel id targeted by an action/feedback's source/customChannel options */
+export function resolveChannelId(options: ChannelOptions): number {
+	if (options.source === 'custom') {
+		return options.customChannel
+	}
+	return Number(options.source)
+}
+
 export function channelLabel(channelId: number, consoleModel: string): string {
 	const fixed = getFixedSources(consoleModel)
 	const match = fixed.find((s) => s.id === channelId)
@@ -79,6 +89,9 @@ export function channelLabel(channelId: number, consoleModel: string): string {
 	return `LwCH ${channelId}`
 }
 
-export function channelVarPrefix(channelId: number): string {
+export function channelVarPrefix(channelId: number | string): string {
 	return `ch_${channelId}`
 }
+
+/** The Livewire channel the example 'custom channel' presets start out with */
+export const DEFAULT_PRESET_CHANNEL = 1
