@@ -1,15 +1,20 @@
 import { InstanceBase, InstanceStatus, type SomeCompanionConfigField } from '@companion-module/base'
 import { GetConfigFields, type ModuleConfig } from './config.js'
-import { UpdateVariableDefinitions, updateVariableValues, createChannelState } from './variables.js'
+import { UpdateVariableDefinitions, updateChannelValues, createChannelState, getAllChannels } from './variables.js'
 import type { ModuleTypes } from './types.js'
 import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
 import { UpdatePresets } from './presets.js'
+import { isDiscoverableChannel, sanitizeDiscoveredChannels, MAX_DISCOVERED_CHANNELS } from './sources.js'
 import dgram from 'dgram'
 
 const MULTICAST_ADDR = '239.192.255.4'
 const RECEIVE_PORT = 4012
 const SEND_PORT = 4011
+// Newly discovered channels are batched: one preset rebuild and one config save per burst...
+const DISCOVERY_DEBOUNCE_MS = 1500
+// ...but a steady trickle of new channels still gets flushed at least this often
+const DISCOVERY_MAX_WAIT_MS = 10000
 
 export interface ChannelState {
 	LMP_ON: boolean
@@ -33,13 +38,22 @@ export default class ModuleInstance extends InstanceBase<ModuleTypes> {
 	channelStates: Map<number, ChannelState> = new Map()
 	receiveSocket: dgram.Socket | null = null
 	sendSocket: dgram.Socket | null = null
+	// Sorted livewire channels heard from the console, persisted in the config (see saveDiscoveredChannels)
+	discoveredChannels: number[] = []
+	discoveryTimer: NodeJS.Timeout | null = null
+	// When discoveredChannels first changed since the last rebuild/save (null: nothing pending)
+	discoveryPendingSince: number | null = null
+	// Whether the MAX_DISCOVERED_CHANNELS warning was logged
+	discoveryCapWarned = false
 
 	constructor(internal: unknown) {
 		super(internal)
 	}
 
 	async init(config: ModuleConfig): Promise<void> {
-		this.config = config
+		// The stored list may be missing or hold junk
+		this.discoveredChannels = sanitizeDiscoveredChannels(config.discoveredChannels)
+		this.config = { ...config, discoveredChannels: this.discoveredChannels }
 
 		this.updateActions()
 		this.updateFeedbacks()
@@ -49,12 +63,22 @@ export default class ModuleInstance extends InstanceBase<ModuleTypes> {
 	}
 
 	async destroy(): Promise<void> {
+		// Don't lose channels found since the last save (no need to rebuild the presets of a module being stopped)
+		this.flushDiscovery(false)
+		this.clearDiscoveryTimer()
 		this.stopListening()
 	}
 
 	async configUpdated(config: ModuleConfig): Promise<void> {
 		this.stopListening()
-		this.config = config
+		this.clearDiscoveryTimer()
+		// Saving the settings forgets the discovered channels (e.g. to start over with another console).
+		// saveConfig doesn't call configUpdated, so this can't loop.
+		this.discoveredChannels = []
+		this.discoveryPendingSince = null
+		this.discoveryCapWarned = false
+		this.config = { ...config, discoveredChannels: [] }
+		this.saveConfig(this.config)
 		this.channelStates.clear()
 		this.updateActions()
 		this.updateFeedbacks()
@@ -233,15 +257,63 @@ export default class ModuleInstance extends InstanceBase<ModuleTypes> {
 			}
 		}
 
+		// A channel with no variable definitions yet (set before the state is stored, as that adds it)
+		const needsDefinitions = isNew && !getAllChannels(this).has(channelId)
 		this.channelStates.set(channelId, state)
 
-		if (isNew) {
-			// also sets the variable values
+		if (needsDefinitions) {
+			if (isDiscoverableChannel(channelId)) {
+				if (this.discoveredChannels.length < MAX_DISCOVERED_CHANNELS) {
+					this.discoveredChannels = [...this.discoveredChannels, channelId].sort((a, b) => a - b)
+					this.scheduleDiscoveryFlush()
+				} else if (!this.discoveryCapWarned) {
+					this.discoveryCapWarned = true
+					this.log('warn', `Already ${MAX_DISCOVERED_CHANNELS} discovered channels, not remembering any more`)
+				}
+			}
+			// Variables must exist right away, or their values would be dropped. Also sets their values.
 			this.updateVariableDefinitions()
 		} else {
-			updateVariableValues(this)
+			updateChannelValues(this, channelId)
 		}
 		this.checkFeedbacks('lamp_state')
+	}
+
+	/** Mark the discovered channels as changed, to be rebuilt/saved once a burst of new channels has settled */
+	scheduleDiscoveryFlush(): void {
+		const now = Date.now()
+		this.discoveryPendingSince ??= now
+		this.clearDiscoveryTimer()
+		// Wait for the burst to end, but no longer than the max wait since the first pending change
+		const remaining = DISCOVERY_MAX_WAIT_MS - (now - this.discoveryPendingSince)
+		if (remaining <= 0) {
+			this.flushDiscovery()
+			return
+		}
+		this.discoveryTimer = setTimeout(() => this.flushDiscovery(), Math.min(DISCOVERY_DEBOUNCE_MS, remaining))
+	}
+
+	/** Rebuild the presets and save the discovered channels, if they changed since the last flush */
+	flushDiscovery(rebuildPresets = true): void {
+		this.clearDiscoveryTimer()
+		if (this.discoveryPendingSince === null) return
+		try {
+			if (rebuildPresets) this.updatePresets()
+			this.config = { ...this.config, discoveredChannels: [...this.discoveredChannels] }
+			this.saveConfig(this.config)
+			// Only once saved, so that a failure is retried on the next change
+			this.discoveryPendingSince = null
+		} catch (err: unknown) {
+			const message = err instanceof Error ? err.message : String(err)
+			this.log('error', `Failed to update the discovered channels: ${message}`)
+		}
+	}
+
+	clearDiscoveryTimer(): void {
+		if (this.discoveryTimer) {
+			clearTimeout(this.discoveryTimer)
+			this.discoveryTimer = null
+		}
 	}
 
 	sendCommand(channelId: number, button: string, direction: string): void {

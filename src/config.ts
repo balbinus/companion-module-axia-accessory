@@ -4,6 +4,8 @@ export type ModuleConfig = {
 	interfaceIp: string
 	consoleIp: string
 	consoleModel: string
+	/** Channels heard from the console, remembered across restarts. Has no config field: only saved by the module itself */
+	discoveredChannels?: number[]
 }
 
 export function GetConfigFields(): SomeCompanionConfigField[] {

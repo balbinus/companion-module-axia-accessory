@@ -37,4 +37,10 @@ For each known source (internal or dynamically discovered), the following variab
 
 Presets are generated for each button type (ON, OFF, MUTE, TALK, headphone presets) with matching feedbacks, plus a headphone select button (push and rotary). When a console model with internal sources is selected, these are generated for each fixed source. The **Livewire Channel** presets, which target any Livewire channel number, are always generated.
 
-Each Livewire Channel button has a `channel` local variable (default 1): after adding a button, open its local variables and change `channel` to retarget the whole button (its actions, feedbacks and text) to another channel. The headphone display text of a retargeted button appears once that channel has sent its first message to the module, since a channel's variables are created on its first message.
+Each Livewire Channel button has a `channel` local variable (default 1): after adding a button, open its local variables and change `channel` to retarget the whole button (its actions, feedbacks and text) to another channel. The headphone display text of a retargeted button appears once its channel's variables exist: for a channel not remembered yet (see below), that is on its first message to the module.
+
+#### Discovered channels
+
+Each Livewire channel heard from the console also gets its own preset group (**Livewire Channel 12**, for example), with the same buttons as **Livewire Channel** but starting on that channel. Its `channel` local variable can still be edited to retarget a button. Channel 1 already has its group, and internal (fixed) sources, or any channel number above 32767, never get one, whichever console model is selected. At most 500 channels are remembered.
+
+Discovered channels are remembered across restarts of the module, so their presets and variables are available before the console sends anything. **Saving or renaming the connection clears this list**: the groups reappear as the channels send data again. Use this to start over after switching consoles. Buttons already placed on pages are not affected.

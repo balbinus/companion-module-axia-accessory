@@ -1,6 +1,6 @@
 import { combineRgb } from '@companion-module/base'
 import type ModuleInstance from './main.js'
-import { getSourceChoices, resolveChannelId } from './sources.js'
+import { getSourceChoices, resolveChannelId, MAX_CUSTOM_CHANNEL } from './sources.js'
 
 export function UpdateFeedbacks(self: ModuleInstance): void {
 	const sourceChoices = getSourceChoices(self.config.consoleModel)
@@ -30,7 +30,7 @@ export function UpdateFeedbacks(self: ModuleInstance): void {
 					label: 'Livewire Channel Number',
 					default: 1,
 					min: 0,
-					max: 32767,
+					max: MAX_CUSTOM_CHANNEL,
 					asInteger: true,
 					isVisibleExpression: '$(options:source) == "custom"',
 				},

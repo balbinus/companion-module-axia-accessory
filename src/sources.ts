@@ -95,3 +95,30 @@ export function channelVarPrefix(channelId: number | string): string {
 
 /** The Livewire channel the example 'custom channel' presets start out with */
 export const DEFAULT_PRESET_CHANNEL = 1
+
+/** The highest channel number a 'custom channel' option accepts */
+export const MAX_CUSTOM_CHANNEL = 32767
+
+/** The most channels remembered as discovered, so that the stored list and the preset groups stay bounded */
+export const MAX_DISCOVERED_CHANNELS = 500
+
+/**
+ * Whether a channel gets its own discovered-channel preset group. Fixed sources are excluded only because
+ * their ids (0xF0xx0000 and up) exceed MAX_CUSTOM_CHANNEL, not by a console model check. Channel 1 already
+ * has the default group.
+ */
+export function isDiscoverableChannel(channelId: number): boolean {
+	return (
+		Number.isInteger(channelId) &&
+		channelId >= 0 &&
+		channelId <= MAX_CUSTOM_CHANNEL &&
+		channelId !== DEFAULT_PRESET_CHANNEL
+	)
+}
+
+/** A sorted, de-duplicated list of the valid discovered channels in untrusted (stored) data */
+export function sanitizeDiscoveredChannels(raw: unknown): number[] {
+	if (!Array.isArray(raw)) return []
+	const channels = raw.filter((id): id is number => typeof id === 'number' && isDiscoverableChannel(id))
+	return [...new Set(channels)].sort((a, b) => a - b).slice(0, MAX_DISCOVERED_CHANNELS)
+}

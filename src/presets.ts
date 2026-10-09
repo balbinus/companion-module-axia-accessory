@@ -26,6 +26,33 @@ interface PresetTarget {
 	/** The module variable holding the headphone display text, as button text (may nest local variables) */
 	hpTextVariable: string
 	localVariables?: CompanionSimplePresetLocalVariable[]
+	/** Shown under the section title */
+	description?: string
+}
+
+/** A target whose channel is set by a `channel` local variable, starting at the given channel number */
+function customTarget(id: string, label: string, startChannel: number): PresetTarget {
+	const choose = 'After adding a button, edit its "channel" local variable to choose'
+	return {
+		id,
+		label,
+		channel: { source: 'custom', customChannel: { isExpression: true, value: '$(local:channel)' } },
+		title: 'Channel $(local:channel)',
+		// Nested variable: the local variable is resolved first, then the module variable of that channel
+		hpTextVariable: `$(axia-accessory:${channelVarPrefix('$(local:channel)')}_dsp_hptext)`,
+		localVariables: [
+			{
+				variableType: 'simple',
+				variableName: 'channel',
+				headline: 'Livewire channel number to control',
+				startupValue: startChannel,
+			},
+		],
+		description:
+			startChannel === DEFAULT_PRESET_CHANNEL
+				? `${choose} the Livewire channel number.`
+				: `Starts on channel ${startChannel}. ${choose} another Livewire channel number.`,
+	}
 }
 
 export function UpdatePresets(self: ModuleInstance): void {
@@ -51,22 +78,12 @@ export function UpdatePresets(self: ModuleInstance): void {
 	}))
 
 	// Custom channel: the whole button is retargeted by editing the `channel` local variable
-	targets.push({
-		id: 'custom',
-		label: 'Livewire Channel',
-		channel: { source: 'custom', customChannel: { isExpression: true, value: '$(local:channel)' } },
-		title: 'Channel $(local:channel)',
-		// Nested variable: the local variable is resolved first, then the module variable of that channel
-		hpTextVariable: `$(axia-accessory:${channelVarPrefix('$(local:channel)')}_dsp_hptext)`,
-		localVariables: [
-			{
-				variableType: 'simple',
-				variableName: 'channel',
-				headline: 'Livewire channel number to control',
-				startupValue: DEFAULT_PRESET_CHANNEL,
-			},
-		],
-	})
+	targets.push(customTarget('custom', 'Livewire Channel', DEFAULT_PRESET_CHANNEL))
+
+	// One group per channel heard from the console, starting out on that channel (still retargetable)
+	for (const channelId of self.discoveredChannels) {
+		targets.push(customTarget(channelVarPrefix(channelId), `Livewire Channel ${channelId}`, channelId))
+	}
 
 	for (const target of targets) {
 		const presetIds: string[] = []
@@ -159,9 +176,7 @@ export function UpdatePresets(self: ModuleInstance): void {
 		sections.push({
 			id: `source_${target.id}`,
 			name: target.label,
-			description: target.localVariables
-				? 'After adding a button, edit its "channel" local variable to choose the Livewire channel number.'
-				: undefined,
+			description: target.description,
 			definitions: presetIds,
 		})
 	} // targets

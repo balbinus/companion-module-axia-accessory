@@ -1,7 +1,7 @@
 import type { SomeCompanionActionInputField } from '@companion-module/base'
 import type ModuleInstance from './main.js'
 import type { ChannelOptions } from './types.js'
-import { getSourceChoices, resolveChannelId } from './sources.js'
+import { getSourceChoices, resolveChannelId, MAX_CUSTOM_CHANNEL } from './sources.js'
 
 export function UpdateActions(self: ModuleInstance): void {
 	const sourceChoices = getSourceChoices(self.config.consoleModel)
@@ -23,7 +23,7 @@ export function UpdateActions(self: ModuleInstance): void {
 			label: 'Livewire Channel Number',
 			default: 1,
 			min: 0,
-			max: 32767,
+			max: MAX_CUSTOM_CHANNEL,
 			asInteger: true,
 			isVisibleExpression: '$(options:source) == "custom"',
 		},

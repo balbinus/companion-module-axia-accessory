@@ -18,7 +18,7 @@ export function createChannelState(): ChannelState {
 	}
 }
 
-function getAllChannels(self: ModuleInstance): Set<number> {
+export function getAllChannels(self: ModuleInstance): Set<number> {
 	const allChannels = new Set<number>()
 
 	// Fixed sources from console model
@@ -30,7 +30,12 @@ function getAllChannels(self: ModuleInstance): Set<number> {
 	// that its variables always exist
 	allChannels.add(DEFAULT_PRESET_CHANNEL)
 
-	// Dynamically discovered channels
+	// Channels remembered from previous runs
+	for (const channelId of self.discoveredChannels) {
+		allChannels.add(channelId)
+	}
+
+	// Channels heard in this run
 	for (const channelId of self.channelStates.keys()) {
 		allChannels.add(channelId)
 	}
@@ -61,22 +66,35 @@ export function UpdateVariableDefinitions(self: ModuleInstance): void {
 	updateVariableValues(self)
 }
 
+/** Add the values of one channel to `values` (a channel that hasn't sent anything yet gets default values) */
+function addChannelValues(self: ModuleInstance, channelId: number, values: Record<string, string | undefined>): void {
+	const state = self.channelStates.get(channelId) ?? createChannelState()
+	const prefix = channelVarPrefix(channelId)
+	values[`${prefix}_lmp_on`] = state.LMP_ON ? 'ON' : 'OFF'
+	values[`${prefix}_lmp_off`] = state.LMP_OFF ? 'ON' : 'OFF'
+	values[`${prefix}_lmp_mute`] = state.LMP_MUTE ? 'ON' : 'OFF'
+	values[`${prefix}_lmp_talk`] = state.LMP_TALK ? 'ON' : 'OFF'
+	values[`${prefix}_dsp_hptext`] = state.DSP_HPtext
+	values[`${prefix}_dsp_hpvol`] = state.DSP_HPvol.toString()
+	values[`${prefix}_dsp_hpsource`] = state.DSP_HPsource
+	values[`${prefix}_lmp_hp_pset1`] = state.LMP_HPpset1 ? 'ON' : 'OFF'
+	values[`${prefix}_lmp_hp_pset2`] = state.LMP_HPpset2 ? 'ON' : 'OFF'
+}
+
+/** Set the values of the variables of every known channel */
 export function updateVariableValues(self: ModuleInstance): void {
 	const values: Record<string, string | undefined> = {}
 
 	for (const channelId of getAllChannels(self)) {
-		const state = self.channelStates.get(channelId) ?? createChannelState()
-		const prefix = channelVarPrefix(channelId)
-		values[`${prefix}_lmp_on`] = state.LMP_ON ? 'ON' : 'OFF'
-		values[`${prefix}_lmp_off`] = state.LMP_OFF ? 'ON' : 'OFF'
-		values[`${prefix}_lmp_mute`] = state.LMP_MUTE ? 'ON' : 'OFF'
-		values[`${prefix}_lmp_talk`] = state.LMP_TALK ? 'ON' : 'OFF'
-		values[`${prefix}_dsp_hptext`] = state.DSP_HPtext
-		values[`${prefix}_dsp_hpvol`] = state.DSP_HPvol.toString()
-		values[`${prefix}_dsp_hpsource`] = state.DSP_HPsource
-		values[`${prefix}_lmp_hp_pset1`] = state.LMP_HPpset1 ? 'ON' : 'OFF'
-		values[`${prefix}_lmp_hp_pset2`] = state.LMP_HPpset2 ? 'ON' : 'OFF'
+		addChannelValues(self, channelId, values)
 	}
 
+	self.setVariableValues(values)
+}
+
+/** Set the values of the variables of a single channel, for when only that channel changed */
+export function updateChannelValues(self: ModuleInstance, channelId: number): void {
+	const values: Record<string, string | undefined> = {}
+	addChannelValues(self, channelId, values)
 	self.setVariableValues(values)
 }
