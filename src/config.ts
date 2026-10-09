@@ -35,7 +35,7 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			width: 6,
 			default: '',
 			choices: [
-				{ id: '', label: 'Unknown (custom sources only)' },
+				{ id: '', label: 'Other (custom sources only)' },
 				{ id: 'qor16', label: 'Axia QOR.16' },
 				{ id: 'qor32', label: 'Axia QOR.32' },
 			],
